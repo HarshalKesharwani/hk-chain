@@ -1,0 +1,34 @@
+{
+  "name": "hk-chain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --watchAll",
+    "dev": "nodemon index.js",
+    "dev-peer": "cross-env GENERATE_PEER_PORT='true' nodemon index.js",
+    "start": "npm run start-redis && node index.js",
+    "start-redis": "redis-server --daemonize yes"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^24.9.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cross-env": "^6.0.3",
+    "elliptic": "^6.5.2",
+    "express": "^4.17.1",
+    "hex-to-binary": "^1.0.1",
+    "nodemon": "^2.0.1",
+    "pubnub": "^4.27.1",
+    "redis": "^2.8.0",
+    "request": "^2.88.0",
+    "uuid": "^3.3.3"
+  }
+}
