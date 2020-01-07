@@ -9,7 +9,6 @@ class Wallet {
         this.balance        = STARTING_BALANCE;
         this.keyPair        = ec.genKeyPair();
         this.publicKey      = this.keyPair.getPublic().encode("hex");
-        //console.log(this.publicKey);
     }
 
     //sign the transaction
