@@ -1,3 +1,4 @@
+//To generate SHA-256 hash of provided data
 const Crypto = require('crypto');
 
 const cryptoHash = (...inputs) => {

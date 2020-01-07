@@ -1,19 +1,21 @@
 const redis         = require('redis');
 const Blockchain    = require('../blockchain');
-const { CHANNELS }  = require('../config');
+const   { 
+            CHANNELS,
+            CHANNEL_BLOCKCHAIN
+        }           = require('../config');
 
 class PubSub {
 
     //constructor
-    constructor({ blockchain }) {
+    constructor({ blockchain, transactionPool }) {
 
-        this.Blockchain = blockchain;
-        
+        this.Blockchain         =   blockchain;
+        this.transactionPool    =   transactionPool;
+
         this.publisher  = redis.createClient();
         this.subscriber = redis.createClient();
 
-        //this.subscriber.subscribe(CHANNELS.TEST);
-        //this.subscriber.subscribe(Object.values(CHANNELS).toString());
         this.subscribe();
 
         this.subscriber.on("message", (channel, message) => {
@@ -21,27 +23,55 @@ class PubSub {
         });
     }
 
+    // handle received message
     handleMessage({ channel, message }) {
         console.log(`Message received. Channel: ${channel}. Message: ${message}.`);
         const parseMessage  = JSON.parse(message);
-        this.Blockchain.replaceChain(parseMessage);
+        switch(channel) {
+
+            case CHANNELS.BLOCKCHAIN:
+                this.Blockchain.replaceChain(parseMessage,true, () => {
+                    console.log('Replace chain message : ', message);
+                    this.transactionPool.clearBlockchainTransaction({ chain : parseMessage });
+                });
+                break;
+
+            case CHANNELS.TRANSACTION:
+                this.transactionPool.setTransaction(parseMessage);
+                break;
+
+            default:
+                return;
+        }
     }
 
+    // subscribe to all available channels
     subscribe() {
         Object.values(CHANNELS).forEach(channel => {
             this.subscriber.subscribe(channel); 
         });
     }
     
+    //publish messages over specific channels
     publish({ channel, message  }) {
-        this.subscriber.unsubscribe(CHANNELS.BLOCKCHAIN, () => {
+        this.subscriber.unsubscribe(channel, () => {
             this.publisher.publish(channel, JSON.stringify(message), () => {
-                this.subscriber.subscribe(CHANNELS.BLOCKCHAIN);
+                this.subscriber.subscribe(channel);
             });
+        });
+    }
+
+    // broadcast own copy to blockchain to the network
+    broadcastChain() {
+        this.publish({ channel: CHANNEL_BLOCKCHAIN, message: this.Blockchain.chain });
+    }
+
+    // broadcast transaction to peers
+    broadcastTransaction(transaction) {
+        this.publish({ 
+            channel: CHANNELS.TRANSACTION, message: transaction
         });
     }
 }
 
 module.exports      = PubSub; 
-// const testPubSub = new PubSub();
-// setTimeout( () => testPubSub.publisher.publish(CHANNELS.TEST, 'testing of pubsub on redis'), 1000); 

@@ -4,19 +4,24 @@ const Transaction           = require('./transaction');
 
 class Wallet {
 
+    //constructor
     constructor() {
         this.balance        = STARTING_BALANCE;
         this.keyPair        = ec.genKeyPair();
         this.publicKey      = this.keyPair.getPublic().encode("hex");
-        console.log(this.publicKey);
+        //console.log(this.publicKey);
     }
 
+    //sign the transaction
     sign(data) { 
         return this.keyPair.sign(cryptoHash(data));
     }
 
-    createTransaction({ recipient, amount }) {
+    //create transaction and add it to a transaction pool
+    createTransaction({ recipient, amount, chain }) {
         
+        this.balance    = Wallet.calculateBalance({ chain, address : this.publicKey });
+
         if(amount > this.balance) {
             throw new Error("Insufficient Balance");
         }
@@ -27,6 +32,31 @@ class Wallet {
                     });
     }
 
+    static calculateBalance({ chain, address }) {
+        let outputTotal         = 0;
+        let hasMadeTransaction  = false;
+        
+        for(let i = chain.length - 1; i > 0; i--) {
+            const block = chain[i];
+
+            for(let transaction of block.data) {        
+                
+                if(transaction.input.address === address) {
+                    hasMadeTransaction = true;
+                }
+                
+                const transactionAmt = transaction.outputMap[address];
+                if(transactionAmt) {
+                    outputTotal = outputTotal + transactionAmt;
+                }
+            }
+            
+            if(hasMadeTransaction) {
+                break;
+            }
+        }
+        return hasMadeTransaction ? outputTotal : STARTING_BALANCE + outputTotal;
+    }
 }
 
 module.exports = Wallet;

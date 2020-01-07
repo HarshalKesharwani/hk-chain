@@ -32,15 +32,17 @@ class Block {
             Nonce        : ${this.nonce}`;
     }
 
+    //genesis block
     static genesis() {
         return new this(GENESIS_DATA);
     }
 
+    //to add block in blockchain
     static mineBlock({lastBlock, data, blockNumber, addedBy}) {
+        let timestamp, hash;
         const lastHash      = lastBlock.hash;
         let difficulty      = lastBlock.difficulty;
         let nonce           = 0;
-        let timestamp, hash;
         do {
             nonce++;
             timestamp       = Date.now();
@@ -69,11 +71,13 @@ class Block {
         });
     }
 
+    //to calculate difficulty value
     static adjustDifficulty({ lastBlock, timestamp }) {
         const { difficulty } = lastBlock; 
 
-        if(difficulty < 1) 
+        if(difficulty < 1) { 
             return 1;
+        }
 
         if(MINING_RATE < (timestamp - lastBlock.timestamp)) {
             return difficulty - 1;
@@ -84,15 +88,3 @@ class Block {
 }
 
 module.exports = Block;
-
-/*
-const b = new Block({
-    blockNumber: 1,
-    timestamp  : Date.now(),
-    lastHash   : 'last-hash-last-hash',
-    data       : ['data1', 'data2'],
-    hash       : 'hash-hash', 
-    addedBy    : 'Harshal' 
-});
-console.log(b);
-*/

@@ -17,7 +17,9 @@ describe("Block", () => {
     const nonce       = 1;
     const difficulty  = 1;
     const block       = new Block({blockNumber, timestamp, lastHash, data, hash, addedBy, nonce, difficulty});
-
+    let logMock       = jest.fn();
+    global.console.log= logMock;
+    
     it("Has a blockNumber, timestamp, lastHash, data, hash, addedBy", () => {
         expect(block.blockNumber).toEqual(blockNumber);
         expect(block.timestamp).toEqual(timestamp);

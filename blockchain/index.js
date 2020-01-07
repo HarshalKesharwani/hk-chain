@@ -1,18 +1,26 @@
 const Block             = require('./block');
 const { cryptoHash }    = require('../util');
-
+const Transaction       = require('../wallet/transaction');
+const Wallet            = require('../wallet');
+const   {
+            MINING_INPUT,
+            MINING_REWARD
+        }               = require('../config');
 class Blockchain {
 
+    //constructor
     constructor() {
-        this.chain = [Block.genesis()];
+        this.chain      = [Block.genesis()];
     }
 
+    //add block in a blockchain
     addBlock({addedBy, data}) {
         const newBlock = Block.mineBlock({lastBlock : this.chain[this.chain.length - 1], data, blockNumber: this.chain.length + 1, addedBy});
         this.chain.push(newBlock);
         this.chain[this.chain.length - 1];
     }
 
+    //validate chain
     static isValidChain(chain) {
         if(JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {
             return false;
@@ -29,15 +37,8 @@ class Blockchain {
                 if(lastHash !== lastBlock.hash) {
                     return false;
                 } 
-                else if(cryptoHash(
-                            timestamp,
-                            addedBy,
-                            data,
-                            blockNumber,
-                            lastHash,
-                            difficulty,
-                            nonce
-                        ) !== hash) {
+                else if(
+                cryptoHash(timestamp, addedBy, data, blockNumber, lastHash, difficulty, nonce) !== hash) {
                     return false;
                 }
             }
@@ -45,7 +46,8 @@ class Blockchain {
         }
     }
 
-    replaceChain(newChain) {
+    //replace current chain with new most updated valid chain
+    replaceChain(newChain, validateTransaction, onSuccess) {  
         if(newChain.length <= this.chain.length) {
             console.error("incoming chain must be longer than existing chain");
             return;
@@ -55,8 +57,67 @@ class Blockchain {
             return;
         }
 
-        console.log("existing chain is replaced with incoming chain", newChain);
+        if(validateTransaction && !this.isValidTransactionData({newChain})) {
+            console.error("transaction data is invalid");
+            return;
+        }
+        
+        if(validateTransaction) {
+            console.log('validateTransaction',validateTransaction)
+            onSuccess();
+        }
+
         this.chain = newChain;       
+    }
+
+    //validate transaction data in the chain
+    isValidTransactionData({ newChain }) {
+        let transactionSet  = new Set();
+        for(let i=1; i< newChain.length; i++) {
+            const block     = newChain[i];
+            let rewardTransactionCount  = 0;
+            for(let transaction of block.data) {
+                if(transaction.input.address == MINING_INPUT.address) {
+                    rewardTransactionCount += 1;
+
+                    if(rewardTransactionCount > 1) {
+                        console.error("Multiple reward transactions found");
+                        return false;
+                    }
+                    
+                    if(Object.values(transaction.outputMap)[0]  !== MINING_REWARD) {
+                        console.error("Invalid Reward");
+                        return false;
+                    }
+                }
+                else {
+                    if(!Transaction.validateTransaction(transaction)) {
+                        console.error("Invalid transaction");
+                        return false;
+                    }
+
+                    const trueBalance   = Wallet.calculateBalance({
+                        chain   : this.chain,
+                        address : transaction.input.address
+                    });
+                    
+                    console.log(`transaction.input.amount : ${transaction.input.amount} :: trueBalance : ${trueBalance} :: transaction.outputMap[transaction.input.address] : ${transaction.outputMap[transaction.input.address]}`);
+                    if(transaction.input.amount !== trueBalance) {
+                        console.error(`Evil Transaction : Balance doesn't match blockchain history`);
+                        return false;
+                    }
+
+                    if(transactionSet.has(transaction)) {
+                        console.error("Duplicate transactions found");
+                        return false;
+                    }
+                    else {
+                        transactionSet.add(transaction);
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
 

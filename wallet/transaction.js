@@ -1,25 +1,26 @@
 const uuid                      = require('uuid/v1');
 const { VerifySignature }       = require('../util');
+const   { 
+            MINING_INPUT, 
+            MINING_REWARD 
+        }                       = require('../config');
 class Transaction {
 
     //constructor
-    constructor({ senderWallet, recipient, amount }) {
+    constructor({ senderWallet, recipient, amount, outputMap, input }) {
         this.id                 = uuid();
-        //this.senderWallet       = senderWallet;
-        //this.recipient          = recipient;
-        //this.amount             = amount;
-        this.outputMap          = this.createOutputMap({ 
+        this.outputMap          = outputMap || this.createOutputMap({ 
                                             senderWallet, 
                                             recipient, 
                                             amount 
                                         });
-        this.input              = this.createInput({ 
+        this.input              = input || this.createInput({ 
                                             senderWallet,
                                             outputMap: this.outputMap 
                                         });
     }
 
-    //methods
+    //create output map
     createOutputMap({ senderWallet, recipient, amount }) {
         const outputMap                     = {};
         outputMap[recipient]                = amount;
@@ -27,8 +28,9 @@ class Transaction {
         return outputMap;
     }
 
+    //create inputs
     createInput({ senderWallet, outputMap }) {
-        const input                         = {
+        const input     = {
             timestamp   : Date.now(),
             address     : senderWallet.publicKey,
             amount      : senderWallet.balance,
@@ -37,24 +39,26 @@ class Transaction {
         return input;
     }
 
+    //validate transactions
     static validateTransaction(transaction) {
-        const {
-                input : {
-                    address,
-                    amount,
-                    signature
-                },
-                outputMap
-            }               = transaction;
+        const   {
+                    input : {
+                        address,
+                        amount,
+                        signature
+                    },
+                    outputMap
+                }           = transaction;
             
         const totalAmount   = Object.values(outputMap)
                                 .reduce((total, amount) => total+amount);
 
-
-        if(totalAmount != amount) {
-            console.error(`Invalid outputMap from : ${address}`);
+        if(totalAmount !== amount) {
+            console.log(JSON.stringify(outputMap));
+            console.error(`Invalid outputMap from : ${address} :: ${totalAmount} :: ${amount}`);
             return false;
         }
+
         if(!VerifySignature({
             publicKey   : address,
             data        : outputMap,
@@ -67,11 +71,13 @@ class Transaction {
         return true;
     }
 
+    //update existing transaction
     updateTransaction({ senderWallet, recipient, amount }) {
         if(amount > this.outputMap[senderWallet.publicKey]) {
             throw new Error("Insufficient balance");
         }
         console.log("recipient "+this.outputMap[recipient]);
+        
         if(this.outputMap[recipient] === undefined) {
             this.outputMap[recipient] = amount; 
         }
@@ -80,13 +86,20 @@ class Transaction {
         }
 
         this.outputMap[senderWallet.publicKey]  = this.outputMap[senderWallet.publicKey] - amount;
-
         this.input                              = this.createInput({
                                                         senderWallet,
                                                         outputMap   : this.outputMap 
                                                     });
         return this;
     }
+
+    //reward miner with currency
+    static rewardTransaction({ minerWallet }) {
+        return new Transaction({
+            input       :    MINING_INPUT,
+            outputMap   :   { [minerWallet.publicKey] : MINING_REWARD }
+        });        
+    }
 }
 
-module.exports  = Transaction; 
+module.exports  = Transaction;

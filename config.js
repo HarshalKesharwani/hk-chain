@@ -4,10 +4,13 @@ const CHANNEL_BLOCKCHAIN    = "BLOCKCHAIN";
 const MINING_RATE           = 50000; //milliseconds
 const INITIAL_DIFFICULTY    = 3;
 const STARTING_BALANCE      = 1000;
+const MINING_REWARD         = 50;
+const MINING_INPUT          = { address : "*Authorized-Reward*" };
 
 const CHANNELS              = {
     TEST        : 'TEST',
-    BLOCKCHAIN  : 'BLOCKCHAIN'
+    BLOCKCHAIN  : 'BLOCKCHAIN',
+    TRANSACTION :  'TRANSACTION'
 }
 const GENESIS_DATA          = {
     blockNumber : 1,
@@ -26,5 +29,7 @@ module.exports              =   {
                                     CHANNELS,
                                     CHANNEL_BLOCKCHAIN,
                                     ROOT_NODE_ADDRESS,
-                                    STARTING_BALANCE
+                                    STARTING_BALANCE,
+                                    MINING_REWARD,
+                                    MINING_INPUT
                                 }
