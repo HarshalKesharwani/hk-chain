@@ -170,7 +170,7 @@ describe("Blockchain", () => {
             newBlockchain1  = new Blockchain();
             wallet          = new Wallet();
             transaction     = wallet.createTransaction({
-                recipient   : 'foorecepient',
+                recipient   : 'foorecipient',
                 amount      : 65,
                 chain       : newBlockchain1.chain   
             });

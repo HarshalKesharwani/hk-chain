@@ -34,7 +34,9 @@ class Block {
 
     //genesis block
     static genesis() {
-        return new this(GENESIS_DATA);
+        let genesis     = new this(GENESIS_DATA);
+        genesis.hash    = cryptoHash(GENESIS_DATA);
+        return genesis;
     }
 
     //to add block in blockchain

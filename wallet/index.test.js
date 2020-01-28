@@ -153,7 +153,7 @@ describe("Wallet", ()                           => {
 
                 beforeEach(() => {
                     recentTransaction = wallet.createTransaction({
-                        recipient   : 'next-foo-recepient',
+                        recipient   : 'next-foo-recipient',
                         amount      : 60,
                         chain       : blockchain.chain
                     });

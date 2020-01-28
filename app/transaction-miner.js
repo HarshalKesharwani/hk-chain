@@ -29,6 +29,9 @@ class TransactionMiner {
             // clear transactionMap
             this.transactionPool.clear();
         }
+        else {
+            throw new Error("Nothing to mine");
+        }
     }
 }
 
