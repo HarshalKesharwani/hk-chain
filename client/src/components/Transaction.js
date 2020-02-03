@@ -26,7 +26,7 @@ const Transaction = ({ transaction }) => {
     }
 
     return (
-        <tr>
+        <tr key={transaction.id}>
             <td>{displayFrom}</td>
             <td>{seperateDisplayToHTML}</td>
             <td>{seperateDisplayAmountHTML}</td>

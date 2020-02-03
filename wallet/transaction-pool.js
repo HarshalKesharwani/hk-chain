@@ -19,15 +19,10 @@ class TransactionPool {
 
     //check if transaction is already added in the transaction pool
     existingTransaction({ inputAddress }) {
-        
-        const transactions  = Object.values(this.transactionMap);
-        
-        return transactions.find( (transaction) => {
-            if(transaction.input.address == inputAddress) {
-                return transaction;
-            }
-        });
-        return undefined;
+            const transactions  = Object.values(this.transactionMap);
+            return transactions.find( (transaction) => 
+                transaction.input.address === inputAddress  
+            );
     }
 
     // validate every transaction in the transaction pool

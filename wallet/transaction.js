@@ -39,6 +39,28 @@ class Transaction {
         return input;
     }
 
+    //update existing transaction
+    updateTransaction({ senderWallet, recipient, amount }) {
+        if(amount > this.outputMap[senderWallet.publicKey]) {
+            throw new Error("Insufficient balance");
+        }
+        console.log("recipient "+this.outputMap[recipient]);
+        
+        if(this.outputMap[recipient] === undefined) {
+            this.outputMap[recipient] = amount; 
+        }
+        else {
+            this.outputMap[recipient] = this.outputMap[recipient] + amount;
+        }
+
+        this.outputMap[senderWallet.publicKey]  = this.outputMap[senderWallet.publicKey] - amount;
+        this.input                              = this.createInput({
+                                                        senderWallet,
+                                                        outputMap   : this.outputMap 
+                                                    });
+        return this;
+    }
+
     //validate transactions
     static validateTransaction(transaction) {
         const   {
@@ -69,28 +91,6 @@ class Transaction {
         }
 
         return true;
-    }
-
-    //update existing transaction
-    updateTransaction({ senderWallet, recipient, amount }) {
-        if(amount > this.outputMap[senderWallet.publicKey]) {
-            throw new Error("Insufficient balance");
-        }
-        console.log("recipient "+this.outputMap[recipient]);
-        
-        if(this.outputMap[recipient] === undefined) {
-            this.outputMap[recipient] = amount; 
-        }
-        else {
-            this.outputMap[recipient] = this.outputMap[recipient] + amount;
-        }
-
-        this.outputMap[senderWallet.publicKey]  = this.outputMap[senderWallet.publicKey] - amount;
-        this.input                              = this.createInput({
-                                                        senderWallet,
-                                                        outputMap   : this.outputMap 
-                                                    });
-        return this;
     }
 
     //reward miner with currency

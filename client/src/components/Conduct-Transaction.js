@@ -1,12 +1,23 @@
 import React, { Component } from 'react';
-import { FormGroup, FormControl, Button } from 'react-bootstrap';
+import { FormGroup, FormControl, Form, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import history from '../history';
+import { thisExpression } from '@babel/types';
 
 class ConductTransaction extends Component {
-    state   = { recipient : '', amount: 0 };
+    state   = { recipient : '', amount: 0, peers : [] };
 
+    componentDidMount() {
+        fetch(`${document.location.origin}/api/peers`)
+        .then((response) => response.json())
+        .then((json) => {
+            this.setState({ peers : json });
+        });
+        
+    }
+    
     updateRecipient = (event) => {
+        console.log("event ", event.target.value);
         this.setState({ recipient : event.target.value });
     }
 
@@ -36,8 +47,15 @@ class ConductTransaction extends Component {
                 <h3>Conduct a transaction</h3>
                 <div className='ConductTransaction'>
                     <FormGroup>
-                        Recipient :
-                        <FormControl input='text' placeholder='recipient' value={this.state.recipient} onChange={this.updateRecipient}></FormControl>
+                        <Form.Label>Recipient :</Form.Label>
+                        <Form.Control as="select" value={this.state.recipient} onChange={this.updateRecipient}>
+                            <option>Select Address</option>
+                            {
+                                this.state.peers.map((peer) => {
+                                    return (<option key={peer}>{peer}</option>)
+                                })
+                            }
+                        </Form.Control>
                     </FormGroup>            
                     <FormGroup>
                         Amount :

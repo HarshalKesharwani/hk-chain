@@ -1,29 +1,29 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Table } from 'react-bootstrap';
-import { POLL_INTERVAL_MS } from '../../../config';
+import { Table, Button } from 'react-bootstrap';
 
 class Blocks extends Component {
 
-    state = { blocks : [] };
+    state = { blocks : [], length : 0, paginatedId : 1 };
     
     componentDidMount() {
-        this.fetchBlocks();
-        this.fetchBlocksInterval = setInterval(
-            () => this.fetchBlocks(),
-            POLL_INTERVAL_MS
-        )
+
+        fetch(`${document.location.origin}/api/blocks/length`)
+            .then((response) => response.json())
+            .then((json) => this.setState({ length : json }))
+
+        this.fetchPaginatedBlocks(this.state.paginatedId);
     }
 
     componentWillUnmount() {
         clearInterval(this.fetchBlocksInterval);
     }
 
-    fetchBlocks = () => {
+    fetchPaginatedBlocks = (paginatedId) => {
         return (
-            fetch(`${document.location.origin}/api/blocks`)
+            fetch(`${document.location.origin}/api/blocks/${paginatedId}`)
             .then((response) => response.json())
-            .then((json) => this.setState({ blocks : json.reverse() }))
+            .then((json) => this.setState({ blocks : json }))
         )
     }
 
@@ -66,6 +66,20 @@ class Blocks extends Component {
                     }
                     </tbody>
                 </Table>
+
+                <div >
+                    {
+                        [...Array(Math.ceil(this.state.length/5)).keys()].map((key) => {
+                            const paginatedId = key + 1;
+
+                            return (
+                            <span key={key} className='Pagination'>
+                                <Button  variant='danger' size='sm' onClick={() => this.fetchPaginatedBlocks(paginatedId)}>{paginatedId}</Button>
+                            </span>
+                            )
+                        })
+                    }
+                </div>
             </div>
         );
     }

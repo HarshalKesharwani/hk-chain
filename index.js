@@ -4,37 +4,73 @@ const request       = require('request');
 const path          = require('path');
 const Blockchain    = require('./blockchain');
 const Wallet        = require('./wallet');
-const PubSub        = require('./app/pubSub');
+const PubSub        = require('./app/pubSub.pubnub');
+const Peers          = require('./wallet/peers');
 const TransactionPool   = require('./wallet/transaction-pool');  
 const TransactionMiner  = require('./app/transaction-miner'); 
-const transactionPool   = new TransactionPool();  
-const   { 
-            DEFAULT_PORT, CHANNEL_BLOCKCHAIN, ROOT_NODE_ADDRESS
-        }           = require('./config');
 
+const transactionPool   = new TransactionPool();  
+const { DEFAULT_PORT,
+    CHANNEL_BLOCKCHAIN,
+    BROADCAST_PUBLIC_KEY_INTERVAL }  = require('./config');
+
+const isDevelopment = process.env.ENV === 'development';
+const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`; //isDevelopment ? `http://localhost:${DEFAULT_PORT}` : 'https://desolate-falls-51169.herokuapp.com';
 const blockchain    = new Blockchain();
 const wallet        = new Wallet();
-const pubSub        = new PubSub({ blockchain, transactionPool });
+const pubSub        = new PubSub({ blockchain, transactionPool, wallet });
 
-setTimeout( ()      =>pubSub.publish({ 
-                                channel: CHANNEL_BLOCKCHAIN, message: blockchain.chain
-                    }), 1000);
 
 const transactionMiner  = new TransactionMiner({
     transactionPool, blockchain, pubSub, wallet
 });
-
+process.env.PWD = process.cwd();
 const app   = express();
 app.use(bodyParser.json());
 app.use(
     express.static(
-        path.join(__dirname,'client/dist')
+        path.join(process.env.PWD,'client/dist')
         )
     );
+
+
+setTimeout( ()      =>pubSub.publish({ 
+    channel: CHANNEL_BLOCKCHAIN, message: JSON.stringify(blockchain.chain)
+}), 1000);
+
+setInterval(
+    () => pubSub.broadcastPublicKey(),
+    BROADCAST_PUBLIC_KEY_INTERVAL
+)
+
+app.get("/api/peers", (req, res)   => {
+    let peers = Peers.getPeers();
+    peers.splice( peers.indexOf(wallet.publicKey), 1 )
+    res.json(peers);
+});
 
 app.get("/api/blocks", (req, res)   => {
     res.json(blockchain.chain);
 });
+
+app.get('/api/blocks/length', (req, res) => {
+    res.json(blockchain.chain.length);
+  });
+  
+  app.get('/api/blocks/:id', (req, res) => {
+    const { id } = req.params;
+    const { length } = blockchain.chain;
+  
+    const blocksReversed = blockchain.chain.slice().reverse();
+  
+    let startIndex = (id-1) * 5;
+    let endIndex = id * 5;
+  
+    startIndex = startIndex < length ? startIndex : length;
+    endIndex = endIndex < length ? endIndex : length;
+  
+    res.json(blocksReversed.slice(startIndex, endIndex));
+  });
 
 app.post("/api/block", (req, res)   => {
     res.json(blockchain.chain[req.body.blockNumber - 1]);
@@ -43,7 +79,7 @@ app.post("/api/block", (req, res)   => {
 app.post("/api/mine", (req, res)    => {
     const { data, addedBy }     = req.body;
     blockchain.addBlock({ data, addedBy });
-    pubSub.broadcastChain(blockchain.chain);
+    pubSub.broadcastChain();//blockchain.chain
     res.redirect("/api/blocks");
 });
 
@@ -76,7 +112,7 @@ app.post("/api/transact", (req, res) => {
     res.json({ type : 'success',transaction });
 });
 
-app.get("/api/transaction-pool-map", (req, res) => {
+app.get("/api/transaction-pool", (req, res) => {
     res.json(transactionPool.transactionMap);
 });
 
@@ -103,7 +139,7 @@ app.get("/api/wallet-info", (req, res) => {
 
 app.get("*", (req, res) => {
     res.sendFile(
-        path.join(__dirname, 'client/dist/index.html')
+        path.join(process.env.PWD, 'client/dist/index.html')
     );
 });
 
@@ -115,67 +151,71 @@ const syncWithRootState = ()                => {
         }
     });
 
-    request(`${ROOT_NODE_ADDRESS}/api/transaction-pool-map`, (error, response, body) => {
+    request(`${ROOT_NODE_ADDRESS}/api/transaction-pool`, (error, response, body) => {
         if(!error && response.statusCode === 200) {
             const transactionMap =  JSON.parse(body);
             console.log(`Transaction map synced on startup`, transactionMap);
             transactionPool.setMap(transactionMap);
         }
     });
-}
-/*
-let walletFoo = new Wallet();
-let walletBar = new Wallet();
 
-const generatedWalletTransaction  = ({ wallet, recipient, amount }) => {
-    const transaction   = wallet.createTransaction({
-        recipient, amount, chain : blockchain.chain
-    }); 
-
-    transactionPool.setTransaction(transaction);
+    pubSub.broadcastPublicKey();
 }
 
-const walletAction      = ()    => {
-    generatedWalletTransaction({
-        wallet, recipient : walletFoo.publicKey, amount : 5
-    });
-}
+if(isDevelopment) {
+    let walletFoo = new Wallet();
+    let walletBar = new Wallet();
 
-const walletFooAction  = ()     => {
-    generatedWalletTransaction({
-        wallet : walletFoo, recipient : walletBar.publicKey, amount : 10
-    });
-}
+    const generatedWalletTransaction  = ({ wallet, recipient, amount }) => {
+        const transaction   = wallet.createTransaction({
+            recipient, amount, chain : blockchain.chain
+        }); 
 
-const walletBarAction  = ()     => {
-    generatedWalletTransaction({
-        wallet : walletBar, recipient : wallet.publicKey, amount : 15
-    });
-}
-
-for(let i=0; i<10; i++) {
-    if(i%3 === 0) {
-        walletAction();
-        walletFooAction();
+        transactionPool.setTransaction(transaction);
     }
-    else if(i%3 === 1) {
-        walletAction();
-        walletBarAction();
+
+    const walletAction      = ()    => {
+        generatedWalletTransaction({
+            wallet, recipient : walletFoo.publicKey, amount : 5
+        });
     }
-    else {
-        walletBarAction();
-        walletFooAction();
+
+    const walletFooAction  = ()     => {
+        generatedWalletTransaction({
+            wallet : walletFoo, recipient : walletBar.publicKey, amount : 10
+        });
     }
-    transactionMiner.mineTransactions();
+
+    const walletBarAction  = ()     => {
+        generatedWalletTransaction({
+            wallet : walletBar, recipient : wallet.publicKey, amount : 15
+        });
+    }
+
+    for(let i=0; i<10; i++) {
+        if(i%3 === 0) {
+            walletAction();
+            walletFooAction();
+        }
+        else if(i%3 === 1) {
+            walletAction();
+            walletBarAction();
+        }
+        else {
+            walletBarAction();
+            walletFooAction();
+        }
+        transactionMiner.mineTransactions();
+    }
 }
-*/
+
 let PEER_PORT;
 
 if(process.env.GENERATE_PEER_PORT === 'true') {
     PEER_PORT   = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
 }
-
-const PORT      = PEER_PORT || DEFAULT_PORT;
+//process.env.PORT ||
+const PORT      =  PEER_PORT || DEFAULT_PORT;
 app.listen(PORT, ()                 => {
     console.log(`listening to port ${PORT}`);
     if(PORT     !== DEFAULT_PORT)
