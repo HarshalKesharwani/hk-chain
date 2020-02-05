@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Table, Button } from 'react-bootstrap';
+import { POLL_INTERVAL_MS } from '../../../config';
 
 class Blocks extends Component {
 
@@ -13,6 +14,11 @@ class Blocks extends Component {
             .then((json) => this.setState({ length : json }))
 
         this.fetchPaginatedBlocks(this.state.paginatedId);
+
+        this.fetchBlocksInterval = setInterval(
+            () => this.fetchPaginatedBlocks(this.state.paginatedId),
+            POLL_INTERVAL_MS
+        )
     }
 
     componentWillUnmount() {
