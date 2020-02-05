@@ -15,7 +15,7 @@ const { DEFAULT_PORT,
     BROADCAST_PUBLIC_KEY_INTERVAL }  = require('./config');
 
 const isDevelopment = process.env.ENV === 'development';
-const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`; //isDevelopment ? `http://localhost:${DEFAULT_PORT}` : 'https://desolate-falls-51169.herokuapp.com';
+const ROOT_NODE_ADDRESS = isDevelopment ? `http://localhost:${DEFAULT_PORT}` : 'https://serene-meadow-78780.herokuapp.com';
 const blockchain    = new Blockchain();
 const wallet        = new Wallet();
 const pubSub        = new PubSub({ blockchain, transactionPool, wallet });
