@@ -31,10 +31,10 @@ class Blockchain {
             return;
         }
 
-        if(validateTransaction) { // && !this.isValidTransactionData({newChain})
-            console.error("transaction data is invalid");
-            return;
-        }
+        // if(validateTransaction) { // && !this.isValidTransactionData({newChain})
+        //     console.error("transaction data is invalid");
+        //     return;
+        // }
         
         if(onSuccess) {// validateTransaction
             //console.log('validateTransaction',validateTransaction)
