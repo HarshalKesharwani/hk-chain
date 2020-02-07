@@ -31,13 +31,12 @@ class Blockchain {
             return;
         }
 
-        // if(validateTransaction) { // && !this.isValidTransactionData({newChain})
-        //     console.error("transaction data is invalid");
-        //     return;
-        // }
+        if(validateTransaction && !this.isValidTransactionData({newChain})) {
+            console.error("transaction data is invalid");
+            return;
+        }
         
-        if(onSuccess) {// validateTransaction
-            //console.log('validateTransaction',validateTransaction)
+        if(onSuccess) {
             onSuccess();
         }
 
@@ -70,13 +69,12 @@ class Blockchain {
                         console.error("Invalid transaction");
                         return false;
                     }
-                    console.log("calculate balance this.chain length : ", this.chain.length)
                     const trueBalance   = Wallet.calculateBalance({
                         chain   : this.chain,
-                        address : transaction.input.address
+                        address : transaction.input.address,
+                        timestamp :  transaction.input.timestamp
                     });
                     
-                    console.log(`block.blockNumber : ${block.blockNumber} :: transaction.input.address : ${transaction.input.address} :: transaction.input.amount : ${transaction.input.amount} :: trueBalance : ${trueBalance} :: transaction.outputMap[transaction.input.address] : ${transaction.outputMap[transaction.input.address]}`);
                     if(transaction.input.amount !== trueBalance) {
                         console.error(`Evil Transaction : Balance doesn't match blockchain history`);
                         return false;

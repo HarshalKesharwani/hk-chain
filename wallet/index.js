@@ -31,59 +31,39 @@ class Wallet {
                     });
     }
 
-    static calculateBalance({ chain, address }) {
-        let hasConductedTransaction = false;
-        let outputsTotal = 0;
-    
-        for (let i=chain.length-1; i>0; i--) {
-          const block = chain[i];
-    
-          for (let transaction of block.data) {
-            if (transaction.input.address === address) {
-              hasConductedTransaction = true;
-            }   
-
-            const addressOutput = transaction.outputMap[address];
-
-            if (addressOutput) {
-              outputsTotal = outputsTotal + addressOutput;
-            }
-
-            //console.log(`hasConductedTransaction : ${hasConductedTransaction} :: addressOutput : ${addressOutput} :: outputsTotal : ${outputsTotal}`);
-          }
-    
-          if (hasConductedTransaction) {
+    static calculateBalance({ chain, address, timestamp }) {
+      let hasConductedTransaction = false;
+      let lessThanTimestamp = true;
+      let outputsTotal = 0;
+  
+      for (let i=chain.length-1; i>0; i--) {
+        const block = chain[i];
+  
+        for (let transaction of block.data) {
+          if (transaction.input.timestamp >= timestamp) {
+            lessThanTimestamp = false;
             break;
           }
+  
+          if (transaction.input.address === address) {
+            hasConductedTransaction = true;
+          }
+  
+          const addressOutput = transaction.outputMap[address];
+  
+          if (addressOutput) {
+            outputsTotal = outputsTotal + addressOutput;
+          }
         }
-    
-        return hasConductedTransaction ? outputsTotal : STARTING_BALANCE + outputsTotal;
+  
+        if (hasConductedTransaction || !lessThanTimestamp) {
+          break;
+        }
       }
-    /*static calculateBalance({ chain, address }) {
-        let outputTotal         = 0;
-        let hasMadeTransaction  = false;
-        
-        for(let i = chain.length - 1; i > 0; i--) {
-            const block = chain[i];
+  
+      return hasConductedTransaction ? outputsTotal : STARTING_BALANCE + outputsTotal;
+    }
 
-            for(let transaction of block.data) {        
-                
-                if(transaction.input.address === address) {
-                    hasMadeTransaction = true;
-                }
-                
-                const transactionAmt = transaction.outputMap[address];
-                if(transactionAmt) {
-                    outputTotal = outputTotal + transactionAmt;
-                }
-            }
-            
-            if(hasMadeTransaction) {
-                break;
-            }
-        }
-        return hasMadeTransaction ? outputTotal : STARTING_BALANCE + outputTotal;
-    }*/
 }
 
 module.exports = Wallet;
