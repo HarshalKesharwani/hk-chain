@@ -2,7 +2,7 @@
 
 hk-chain is a self created blockchain which is designed considering bitcoin blockchain features. 
 
-The blockchain is deployed in 5 nodes which are as follows:
+The blockchain is deployed at 5 nodes which are as follows:
   1. https://serene-meadow-78780.herokuapp.com/
   2. https://blooming-ravine-60370.herokuapp.com/
   3. https://arcane-fjord-24483.herokuapp.com/
